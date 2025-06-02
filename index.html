@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Matrix Drive</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Custom Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+  <!-- Include Orbitron font for a sci-fi look -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+  <style>
+    /* Global Styles with a Matrix-inspired vibe */
+    body {
+      background: radial-gradient(circle, #000, #111);
+      color: #39FF14;
+      font-family: 'Orbitron', monospace;
+      margin: 0;
+      padding: 20px;
+      text-shadow: 0 0 5px #39FF14;
+    }
+    h1, h2, h3, strong {
+      color: #39FF14;
+      text-shadow: 0 0 5px #39FF14;
+    }
+    /* Custom File Input – Hidden input with a neon-green label */
+    .custom-file-upload {
+      display: inline-block;
+      padding: 10px 20px;
+      cursor: pointer;
+      background: #39FF14;
+      color: #000;
+      border: 2px solid #39FF14;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    /* Login Screen Styles */
+    #loginContainer {
+      text-align: center;
+      margin-top: 100px;
+      padding: 20px;
+      border: 2px solid #39FF14;
+      border-radius: 8px;
+      transition: background-color 1s, color 1s, border-color 1s;
+    }
+    #loginContainer input[type="password"] {
+      padding: 10px;
+      font-size: 1em;
+      width: 300px;
+      margin-bottom: 10px;
+      border: 2px solid #39FF14;
+      background: #111;
+      color: #39FF14;
+      border-radius: 4px;
+    }
+    #loginContainer button {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      background: #111;
+      color: #39FF14;
+      border: 2px solid #39FF14;
+      border-radius: 4px;
+    }
+    #loginMessage {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    /* Lockout: Smoothly shift text and border to red */
+    #loginContainer.lockout,
+    #loginContainer.lockout input[type="password"],
+    #loginContainer.lockout button {
+      border-color: #ff0000;
+      color: #ff0000;
+    }
+    /* Loading Screen Styles */
+    #loadingContainer {
+      display: none;
+      text-align: center;
+      margin-top: 50px;
+      font-size: 1.2em;
+      line-height: 1.5em;
+    }
+    /* Main Content Area */
+    #mainContent {
+      display: none;
+    }
+    .container {
+      margin-bottom: 20px;
+      background-color: #111;
+      padding: 20px;
+      border: 2px solid #39FF14;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #39FF14;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      background: #111;
+      color: #39FF14;
+      border: 2px solid #39FF14;
+      border-radius: 4px;
+    }
+    /* Search Bar Styles */
+    #searchBar {
+      display: block;
+      width: 400px;
+      max-width: 100%;
+      margin: 0 auto 10px auto;
+      padding: 10px;
+      font-size: 1em;
+      border: 2px solid #39FF14;
+      border-radius: 4px;
+      background: #111;
+      color: #39FF14;
+    }
+    /* Backup Controls */
+    #backupControls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #backupControls button {
+      margin: 0 10px;
+    }
+    /* File List Container */
+    #fileList {
+      max-width: 400px;
+      margin: 20px auto;
+    }
+    /* File List Styles */
+    .file-item {
+      border: 2px solid #39FF14;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      background: #111;
+      box-shadow: 0 0 5px #39FF14;
+    }
+    .file-item strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+    .buttons {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .buttons button,
+    .buttons a.download-btn {
+      padding: 8px 16px;
+      background: #39FF14;
+      color: #000;
+      border: 2px solid #39FF14;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 0.9em;
+    }
+    .buttons button:hover,
+    .buttons a.download-btn:hover {
+      background: #39FF14;
+      color: #000;
+    }
+    /* Content display for text files */
+    .content-display {
+      background: #222;
+      color: #39FF14;
+      padding: 10px;
+      margin-top: 10px;
+      display: none;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow: auto;
+      border: 1px solid #39FF14;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Container: Site-level protection -->
+  <div id="loginContainer">
+    <h2>Matrix Drive</h2>
+    <p>Please enter the site password to continue:</p>
+    <input type="password" id="sitePassword" placeholder="Enter site password">
+    <br>
+    <button id="loginBtn">Login</button>
+    <div id="loginMessage"></div>
+  </div>
+
+  <!-- Loading Screen: Shown after successful login -->
+  <div id="loadingContainer"></div>
+
+  <!-- Main Content: Accessible after the loading completes -->
+  <div id="mainContent">
+    <h2>Matrix Drive - File Management System</h2>
+    <div class="container">
+      <!-- File Upload Section -->
+      <label for="fileInput" class="custom-file-upload">Choose File</label>
+      <input type="file" id="fileInput" multiple>
+      <button id="uploadBtn">Upload File(s)</button>
+    </div>
+    
+    <!-- Backup Controls: Export and Import functions -->
+    <div id="backupControls">
+      <button id="exportBtn">Export Data</button>
+      <button id="importBtn">Import Data</button>
+      <input type="file" id="importInput" accept=".json" style="display:none;">
+    </div>
+    
+    <!-- Search Bar -->
+    <input type="text" id="searchBar" placeholder="Search files...">
+    
+    <!-- File List Container -->
+    <div id="fileList">
+      <h3>Stored Files:</h3>
+      <!-- File items will be dynamically added here -->
+    </div>
+  </div>
+
+  <script>
+    /*********************
+     * Obfuscated Password Setup
+     *********************/
+    // We want the secret password to be: "1Chris@12"
+    // Each character’s ASCII code is encoded into a Morse–like code.
+    const morseDigitMap = {
+      ".----": "1", "..---": "2", "...--": "3", "....-": "4",
+      ".....": "5", "-....": "6", "--...": "7", "---..": "8",
+      "----.": "9", "-----": "0"
+    };
+
+    // Decoding function: Characters are separated by " / " and digit codes by spaces.
+    function decodeSecret(encoded) {
+      const charGroups = encoded.split(" / ");
+      let result = "";
+      charGroups.forEach(group => {
+        const digitCodes = group.split(" ");
+        const asciiStr = digitCodes.map(dc => morseDigitMap[dc] || "").join("");
+        result += String.fromCharCode(parseInt(asciiStr, 10));
+      });
+      return result;
+    }
+    
+    // Encoded secret password "1Chris@12"
+    const encodedSecret = "....- ----. / -.... --... / .---- ----- ....- / .---- .---- ....- / .---- ----- ..... / .---- .---- ..... / -.... ....- / ....- ----. / ..... -----";
+    const secretPassword = decodeSecret(encodedSecret);
+    // secretPassword should be "1Chris@12"
+
+    /***********************
+     * Login & Persistent Lockout Logic
+     ***********************/
+    let failedAttempts = 0;
+    let locked = false;
+    const LOCKOUT_DURATION = 60000; // 60 seconds
+
+    // Check for persistent lockout using localStorage.
+    function checkLockout() {
+      const lockoutUntil = localStorage.getItem("lockoutUntil");
+      if (lockoutUntil && Date.now() < lockoutUntil) {
+        locked = true;
+        applyLockoutUI(lockoutUntil - Date.now());
+      }
+    }
+
+    function applyLockoutUI(remainingMillis) {
+      const loginContainer = document.getElementById("loginContainer");
+      loginContainer.classList.add("lockout");
+      document.getElementById("sitePassword").disabled = true;
+      document.getElementById("loginBtn").disabled = true;
+      updateLockoutMessage(remainingMillis);
+      const countdownInterval = setInterval(() => {
+        const remaining = localStorage.getItem("lockoutUntil") - Date.now();
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          endLockout();
+        } else {
+          updateLockoutMessage(remaining);
+        }
+      }, 1000);
+    }
+
+    function updateLockoutMessage(remainingMillis) {
+      const remainingSeconds = Math.ceil(remainingMillis / 1000);
+      document.getElementById("loginMessage").textContent = "Locked out: " + remainingSeconds + " seconds remaining.";
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", function () {
+      if (locked) return;
+      const entered = document.getElementById("sitePassword").value;
+      if (entered === secretPassword) {
+        localStorage.removeItem("lockoutUntil");
+        document.getElementById("loginContainer").style.display = "none";
+        showLoadingScreen();
+      } else {
+        failedAttempts++;
+        document.getElementById("loginMessage").textContent = "Incorrect password! Attempts: " + failedAttempts;
+        if (failedAttempts >= 7) {
+          triggerLockout();
+        }
+      }
+    });
+
+    function triggerLockout() {
+      locked = true;
+      const lockoutUntil = Date.now() + LOCKOUT_DURATION;
+      localStorage.setItem("lockoutUntil", lockoutUntil);
+      const loginContainer = document.getElementById("loginContainer");
+      loginContainer.classList.add("lockout");
+      document.getElementById("sitePassword").disabled = true;
+      document.getElementById("loginBtn").disabled = true;
+      applyLockoutUI(LOCKOUT_DURATION);
+    }
+
+    function endLockout() {
+      const loginContainer = document.getElementById("loginContainer");
+      loginContainer.classList.remove("lockout");
+      document.getElementById("sitePassword").disabled = false;
+      document.getElementById("loginBtn").disabled = false;
+      document.getElementById("loginMessage").textContent = "";
+      failedAttempts = 0;
+      locked = false;
+      localStorage.removeItem("lockoutUntil");
+    }
+
+    checkLockout(); // On page load
+
+    /***************************************
+     * Loading Screen with Animated Progress
+     ***************************************/
+    function showLoadingScreen() {
+      const loadingContainer = document.getElementById("loadingContainer");
+      loadingContainer.style.display = "block";
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        let filledSegments = Math.floor(progress / 10);
+        let emptySegments = 10 - filledSegments;
+        let bar = "[";
+        for (let i = 0; i < filledSegments; i++) {
+          bar += "̲̅";
+        }
+        for (let i = 0; i < emptySegments; i++) {
+          bar += "_";
+        }
+        bar += "] " + progress + "%";
+        loadingContainer.innerHTML = "<pre>" + bar + "</pre>";
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            loadingContainer.style.display = "none";
+            document.getElementById("mainContent").style.display = "block";
+            initDB().then(refreshFileList);
+          }, 500);
+        }
+      }, 500);
+    }
+
+    /***************************************
+     * IndexedDB Setup and Utility Functions
+     ***************************************/
+    let db;
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open("FileStorageDB", 1);
+        request.onerror = (event) => {
+          console.error("IndexedDB error:", event.target.error);
+          reject(event.target.error);
+        };
+        request.onsuccess = (event) => {
+          db = event.target.result;
+          resolve();
+        };
+        request.onupgradeneeded = (event) => {
+          db = event.target.result;
+          if (!db.objectStoreNames.contains("files")) {
+            const objectStore = db.createObjectStore("files", { keyPath: "id", autoIncrement: true });
+            objectStore.createIndex("name", "name", { unique: false });
+          }
+        };
+      });
+    }
+
+    function addFile(file) {
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction("files", "readwrite");
+        const store = transaction.objectStore("files");
+        const fileRecord = {
+          name: file.name,
+          file: file,
+          type: file.type,
+          size: file.size,
+          lastModified: file.lastModified
+        };
+        const request = store.add(fileRecord);
+        request.onsuccess = () => { resolve(); };
+        request.onerror = (event) => {
+          console.error("Error adding file:", event.target.error);
+          reject(event.target.error);
+        };
+      });
+    }
+
+    function getAllFiles() {
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction("files", "readonly");
+        const store = transaction.objectStore("files");
+        const request = store.getAll();
+        request.onsuccess = (event) => { resolve(event.target.result); };
+        request.onerror = (event) => { reject(event.target.error); };
+      });
+    }
+
+    function deleteFile(id) {
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction("files", "readwrite");
+        const store = transaction.objectStore("files");
+        const request = store.delete(id);
+        request.onsuccess = () => { resolve(); };
+        request.onerror = (event) => { reject(event.target.error); };
+      });
+    }
+
+    /*****************************************
+     * File List UI Refresh and Search Handling
+     *****************************************/
+    async function refreshFileList() {
+      const fileListDiv = document.getElementById("fileList");
+      const searchQuery = document.getElementById("searchBar").value.trim().toLowerCase();
+      fileListDiv.innerHTML = "<h3>Stored Files:</h3>";
+      try {
+        const files = await getAllFiles();
+        const filteredFiles = searchQuery
+          ? files.filter(file => file.name.toLowerCase().includes(searchQuery))
+          : files;
+        if (filteredFiles.length === 0) {
+          fileListDiv.innerHTML += "<p>No files stored.</p>";
+        } else {
+          filteredFiles.forEach(fileRecord => {
+            const fileItem = document.createElement("div");
+            fileItem.className = "file-item";
+    
+            // Display file name
+            const nameElem = document.createElement("strong");
+            nameElem.textContent = fileRecord.name;
+            fileItem.appendChild(nameElem);
+    
+            // Container for buttons
+            const btnContainer = document.createElement("div");
+            btnContainer.className = "buttons";
+    
+            // Download link
+            const downloadLink = document.createElement("a");
+            const fileURL = URL.createObjectURL(fileRecord.file);
+            downloadLink.href = fileURL;
+            downloadLink.download = fileRecord.name;
+            downloadLink.textContent = "Download";
+            downloadLink.className = "download-btn";
+            btnContainer.appendChild(downloadLink);
+    
+            // View contents button (for text-based files)
+            if (
+              fileRecord.type.startsWith("text") ||
+              fileRecord.name.match(/\.(txt|html|htm|js|json|css)$/i)
+            ) {
+              const viewBtn = document.createElement("button");
+              viewBtn.textContent = "View Contents";
+              viewBtn.className = "view-btn";
+              const contentDisplay = document.createElement("div");
+              contentDisplay.className = "content-display";
+              viewBtn.addEventListener("click", function () {
+                if (contentDisplay.style.display === "none" || contentDisplay.style.display === "") {
+                  const reader = new FileReader();
+                  reader.onload = function (e) {
+                    contentDisplay.textContent = e.target.result;
+                  };
+                  reader.readAsText(fileRecord.file);
+                  contentDisplay.style.display = "block";
+                  viewBtn.textContent = "Hide Contents";
+                } else {
+                  contentDisplay.style.display = "none";
+                  viewBtn.textContent = "View Contents";
+                }
+              });
+              btnContainer.appendChild(viewBtn);
+              fileItem.appendChild(contentDisplay);
+            }
+    
+            // Delete button
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Delete";
+            deleteBtn.addEventListener("click", async function () {
+              if (confirm("Are you sure you want to delete this file?")) {
+                await deleteFile(fileRecord.id);
+                refreshFileList();
+              }
+            });
+            btnContainer.appendChild(deleteBtn);
+    
+            fileItem.appendChild(btnContainer);
+            fileListDiv.appendChild(fileItem);
+          });
+        }
+      } catch (err) {
+        console.error("Error refreshing file list:", err);
+      }
+    }
+    
+    // Listen for search queries.
+    document.getElementById("searchBar").addEventListener("keyup", refreshFileList);
+    
+    /*********************
+     * File Upload Logic
+     *********************/
+    document.getElementById("uploadBtn").addEventListener("click", async function () {
+      const fileInput = document.getElementById("fileInput");
+      const files = fileInput.files;
+      if (files.length === 0) {
+        alert("Select at least one file to upload.");
+        return;
+      }
+      for (let i = 0; i < files.length; i++) {
+        try {
+          await addFile(files[i]);
+        } catch (e) {
+          console.error("Error uploading file:", e);
+        }
+      }
+      fileInput.value = "";
+      refreshFileList();
+    });
+    
+    /******************************************
+     * Backup & Restore Functions (Export/Import)
+     ******************************************/
+    
+    // Export: Retrieve all files, convert each to a data URL, and download as JSON.
+    function exportData() {
+      getAllFiles().then(files => {
+        let promises = files.map(fileRecord => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              resolve({
+                name: fileRecord.name,
+                type: fileRecord.type,
+                size: fileRecord.size,
+                lastModified: fileRecord.lastModified,
+                dataURL: e.target.result
+              });
+            };
+            reader.onerror = function(err) {
+              reject(err);
+            };
+            reader.readAsDataURL(fileRecord.file);
+          });
+        });
+    
+        Promise.all(promises)
+          .then(backupArray => {
+            const backupJSON = JSON.stringify(backupArray);
+            const blob = new Blob([backupJSON], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "matrix-drive-backup.json";
+            a.click();
+            URL.revokeObjectURL(url);
+          })
+          .catch(err => console.error("Error exporting data:", err));
+      });
+    }
+    
+    // Helper: Convert Data URL to Blob.
+    function dataURLtoBlob(dataurl) {
+      const arr = dataurl.split(',');
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : "";
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while(n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new Blob([u8arr], { type: mime });
+    }
+    
+    // Import: Read a JSON backup file and restore each file to IndexedDB.
+    function handleImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const backupArray = JSON.parse(e.target.result);
+          backupArray.forEach(entry => {
+            const blob = dataURLtoBlob(entry.dataURL);
+            const fileObj = new File([blob], entry.name, {
+              type: entry.type,
+              lastModified: entry.lastModified
+            });
+            addFile(fileObj)
+              .then(() => {
+                console.log("Imported: " + entry.name);
+                refreshFileList();
+              })
+              .catch(err => console.error("Error importing file:", err));
+          });
+        } catch (err) {
+          console.error("Error reading backup file:", err);
+        }
+      };
+      reader.onerror = function(err) {
+        console.error("Error reading file:", err);
+      };
+      reader.readAsText(file);
+    }
+    
+    // Event Listeners for Backup & Restore Buttons.
+    document.getElementById("exportBtn").addEventListener("click", exportData);
+    document.getElementById("importBtn").addEventListener("click", function() {
+      document.getElementById("importInput").click();
+    });
+    document.getElementById("importInput").addEventListener("change", handleImport);
+    
+  </script>
+</body>
+</html>
